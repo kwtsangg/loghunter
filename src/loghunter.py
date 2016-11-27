@@ -68,6 +68,7 @@ from datetime import datetime, timedelta
 #=======================================================================================
 
 LogDirPath="/home/kwtsang/OneDrive_CUHK/mle/loghunter"
+RelSrcPath="src"
 PDFReader="okular"
 TexEditor="vim"
 TexEditorOptions="+26"
@@ -320,7 +321,7 @@ if modeflag["create"]:
         print_log_tex()
       elif typeflag["slide"]:
         print_slide_tex()
-        subprocess.check_call("cp " + LogDirPath + "/src_medion_linux/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+        subprocess.check_call("cp " + LogDirPath + "/" + RelSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
       printf("The %s is created" % TEXFILE, "verbose") if args.verbose else None
    
     printf("Editing %s ..." % TEXFILE)
