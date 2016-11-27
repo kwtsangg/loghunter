@@ -19,7 +19,7 @@ Default
 1. type is log 
 1. mode is create
 
-Example Usage 
+### Example Usage ###
 
 1. loghunter
 
