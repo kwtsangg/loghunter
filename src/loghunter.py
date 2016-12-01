@@ -238,7 +238,7 @@ if args.list:
   subprocess.check_call("ls %s/data/log/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="log" else None
   subprocess.check_call("ls %s/data/slide/*/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="slide" else None
   subprocess.check_call("ls %s/data/cheatsheet/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="cheatsheet" else None
-  subprocess.check_call("ls %s/data/paper/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="paper" else None
+  subprocess.check_call("ls %s/data/paper/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="paper" else None
   sys.exit()
 
 # Check arguments
@@ -313,7 +313,7 @@ if modeflag["create"]:
   if typeflag["log"] == True or typeflag["slide"] == True:
     # Create the tex file if it doesnt exist
     if os.path.isfile(TEXTEXPATH):
-      printf("The %s exists" % TEXFILE)
+      printf("The %s exists." % TEXFILE)
     else:
       printf("The %s doesnt exist. Creating ..." % TEXFILE)
       subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
@@ -323,23 +323,32 @@ if modeflag["create"]:
         print_slide_tex()
         subprocess.check_call("cp " + LogDirPath + "/" + RelSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
       printf("The %s is created" % TEXFILE, "verbose") if args.verbose else None
+
+    time_update_before = os.path.getmtime(TEXTEXPATH)
+    printf(time_update_before, "verbose") if args.verbose else None
    
     printf("Editing %s ..." % TEXFILE)
     os.system(TexEditor + " " + TEXTEXPATH + " " + TexEditorOptions)
-  
-    printf("Compiling %s ..." % TEXFILE)
-    os.chdir(TEXDIRPATH)
-    subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
-    subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
-    printf("Compilation Done!")
-  
-    printf("Removing redundant files ...")
-    for fileformat in TexCleanFileFormat:
-      item = TEXDIRPATH + "/" + TEXNAME + "." + fileformat
-      if os.path.isfile(item):
-        printf("Deleting %s" % item, "verbose") if args.verbose else None
-        subprocess.check_call("rm " + item, stdout=subprocess.PIPE, shell=True)
-    printf("Removal Done!")
+
+    time_update_after = os.path.getmtime(TEXTEXPATH)
+    printf(time_update_after, "verbose") if args.verbose else None
+
+    if (time_update_after > time_update_before):
+      printf("Compiling %s ..." % TEXFILE)
+      os.chdir(TEXDIRPATH)
+      subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
+      subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
+      printf("Compilation Done!")
+    
+      printf("Removing redundant files ...")
+      for fileformat in TexCleanFileFormat:
+        item = TEXDIRPATH + "/" + TEXNAME + "." + fileformat
+        if os.path.isfile(item):
+          printf("Deleting %s ..." % item, "verbose") if args.verbose else None
+          subprocess.check_call("rm " + item, stdout=subprocess.PIPE, shell=True)
+      printf("Removal Done!")
+    else:
+      printf("The tex file didnt be modified. Wont start compilation.")
   else:
     printf("Typeflag is not defined for create mode", "err")
     sys.exit()
@@ -354,7 +363,7 @@ elif modeflag["view"]:
     subprocess.check_call("ls %s/data/log/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) 
     subprocess.check_call("ls %s/data/slide/*/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True)
     subprocess.check_call("ls %s/data/cheatsheet/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True)
-    subprocess.check_call("ls %s/data/paper/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True)
+    subprocess.check_call("ls %s/data/paper/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True)
     sys.exit()
 
 elif modeflag["copy"]:
@@ -369,4 +378,6 @@ elif modeflag["changedir"]:
 else:
   printf("Modeflag is undefined","err")
   sys.exit()
+
+printf("Done!")
 
