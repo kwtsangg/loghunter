@@ -2,7 +2,7 @@
 __file__       = "loghunter"
 __author__     = "Ka Wa Tsang"
 __copyright__  = "Copyright 2016"
-__version__    = "1.0.1"
+__version__    = "1.1.1"
 __email__      = "kwtsang@nikhef.nl"
 
 """
@@ -51,7 +51,17 @@ Description="""
                    Rename the program to be "loghunter" !!
                    Change Description.
                    version tag = 1.0.1
- """
+       01-Dec-2016 Added one more directory layer to "paper" type for the classification of layer.
+                   If the tex didnt be modified, wont start compilation.
+       08-Dec-2016 Added a handy --list option.
+                   Modified the argparse shorthand.
+                   version tag = 1.1.1
+"""
+
+#   TODO:
+#   1. Change slidetype to subtype.
+#   2. Include type other than the current existing type.
+
 #=======================================================================================
 # Module/package import
 #=======================================================================================
@@ -67,31 +77,122 @@ from datetime import datetime, timedelta
 # User Input before using this scirpt !!
 #=======================================================================================
 
+# Global Variable
 LogDirPath="/home/kwtsang/OneDrive_CUHK/mle/loghunter"
 RelSrcPath="src"
 PDFReader="okular"
 TexEditor="vim"
 TexEditorOptions="+26"
 
-# Global Variable
 TexCleanFileFormat=[ "log", "aux", "out", "nav", "snm", "toc", "dvi" ]
 
 #=======================================================================================
 # General Function
 #=======================================================================================
-def printf(str, type="msg"):
-  print "log %s :: %s" % ( type, str )
+def printf(string, printtype="message", askforinput=False):
+  """
+    To print out the message of different types.
+    Optional: "askforinput", if true, the function will return the input by user.
+  """
+  if askforinput == False:
+    print "log %7s :: %s" % ( printtype, string )
+  elif askforinput == True:
+    return raw_input( "log %7s :: %s" % ( printtype, string ) )
+  else:
+    printf("Unknown option for askforinput in the printf function ! Exiting ...", "error")
+    sys.exit()
 
 def Date(date, dt=0, dayofweek=None, dateformat="%Y%m%d"):
-  # To obtain the date of the weekday of the input date.
+  """
+    To obtain the date of the weekday of the input date.
+    eg. Date( today, dayofweek=6 ) returns the date of the coming Saturday.
+    Optional: "dt", eg dt = -1, the date passed will be one day earlier of the input date.
+  """
   d = datetime.strptime(str(date),"%Y%m%d") + timedelta(days=dt)
-  if isinstance( dayofweek, int ):
-    if d.isoweekday() == 7:
-      isoweekday = 0;
+  if dayofweek!=None:
+    if isinstance( dayofweek, int ):
+      if d.isoweekday() == 7:
+        isoweekday = 0;
+      else:
+        isoweekday = d.isoweekday()
+      d = ( d - timedelta(days=isoweekday+dayofweek) )
     else:
-      isoweekday = d.isoweekday()
-    d = ( d - timedelta(days=isoweekday+dayofweek) )
+      printf("Unknown value for dayofweek in the Date function !", "warning")
+      printf("Ignoring the dayofweek option in the Date function ...", "warning")
   return d.strftime(dateformat)
+
+def List(path, ext=".pdf", savepath=False):
+  """
+    To obtain the absolute path of all files under "path" with "extension"
+    Assumption: PDFReader is used to perform the "autoread" option!
+    Optional: "savepath", if true, return [AbsPath,Name,Ext] of the target file
+  """
+  ArrayAbsPath = []
+  # To obtain all files (with absolute path under "path") and store in ArrayFullPath
+  for dirPath, dirName, fileName in os.walk(path):
+    for iter_fileName in fileName:
+      if os.path.splitext(iter_fileName)[1] == ext:
+        ArrayAbsPath.append([dirPath,os.path.splitext(iter_fileName)[0],os.path.splitext(iter_fileName)[1]])
+  # If ArrayAbsPath not empty:
+  if ArrayAbsPath:
+    for iter_AbsPath, iter_Name, iter_Ext in ArrayAbsPath:
+      print "%3i) %s/%s%s" % (ArrayAbsPath.index([iter_AbsPath,iter_Name,iter_Ext])+1,iter_AbsPath,iter_Name,iter_Ext)
+    if savepath==True:
+      while 1:
+        try:
+          IndexToSave = printf("Please enter the file index to select: ", askforinput=True)
+          if IndexToSave == "":
+            continue
+          else:
+            IndexToSave = int(IndexToSave)
+            if isinstance(IndexToSave, int):
+              if IndexToSave > 0 and IndexToSave < len(ArrayAbsPath)+1:
+                return ArrayAbsPath[IndexToSave-1]
+              else:
+                printf("The file index is out of range. Try again ..." ,"warning")
+        except KeyboardInterrupt:
+          print ""
+          printf("User terminates the loghunter. Good Bye!")
+          sys.exit()
+        except:
+          printf("Unknown file index. Exiting ...", "error")
+          sys.exit()
+    elif savepath!=False:
+      printf("Unknown value for savepath in the List function !", "warning")
+      printf("Ignoring the savepath option in the List function ...", "warning")
+  # If empty:
+  else:
+    printf("No file with extension (%s) is found in the path of %s" % (ext,path))
+
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is one of "yes" or "no".
+    """
+    valid = {"yes":"yes",   "y":"yes",  "ye":"yes",
+             "no":"no",     "n":"no"}
+    if default == None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while 1:
+        choice = printf(question + prompt, askforinput=True).lower()
+        if default is not None and choice == '':
+            return default
+        elif choice in valid.keys():
+            return valid[choice]
+        else:
+            printf("Please respond with 'yes' or 'no' (or 'y' or 'n').", "warning")
 
 #=======================================================================================
 # Template Function
@@ -215,96 +316,116 @@ def print_slide_tex():
 #=======================================================================================
 
 parser = argparse.ArgumentParser(description=textwrap.dedent(Description), prog=__file__, formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-d" , "--date"      , default=datetime.today().strftime("%Y%m%d"), action="store", type=int, help="Date in YYYYMMDD format. (default: today)")
+parser.add_argument("-d ", "--date"      , default=datetime.today().strftime("%Y%m%d"), action="store", type=int, help="Date in YYYYMMDD format. (default: today)")
 parser.add_argument("-dt", "--delta-days", default=0                                  , action="store", type=int, help="Number of days before/after the --date. eg. -1 means yesterday.")
-
-parser.add_argument("-s" , "--slide"     , default=False                              , action="store_true", help="Type: slide. Please include --date, --slidetype and --title.")
 parser.add_argument("-st", "--slidetype" , default="group meeting", choices=["group meeting","conference","CBC meeting"], action="store", help="Classification of the slide.")
-parser.add_argument("-t" , "--title"                                                  , action="store")
-parser.add_argument("-c" , "--cheatsheet", default=False                              , action="store_true", help="Type: cheatsheet. Please include --title.")
-parser.add_argument("-p" , "--paper"     , default=False                              , action="store_true", help="Type: paper. Please include --title.")
+parser.add_argument("-tt", "--title"                                                  , action="store")
 
+parser.add_argument("-lg", "--log"       , default=False                              , action="store_true", help="Type: log. (Default)")
+parser.add_argument("-sl", "--slide"     , default=False                              , action="store_true", help="Type: slide. Please include --date, --slidetype and --title.")
+parser.add_argument("-ch", "--cheatsheet", default=False                              , action="store_true", help="Type: cheatsheet. Please include --title.")
+parser.add_argument("-pp", "--paper"     , default=False                              , action="store_true", help="Type: paper. Please include --title.")
+
+parser.add_argument("-cr", "--create"    , default=False                              , action="store_true", help="Mode: create the tex. (Default)")
 parser.add_argument("-v ", "--view"      , default=False                              , action="store_true", help="Mode: view the pdf.")
 parser.add_argument("-cp", "--copy"                                                   , action="store"     , help="Mode: copy files to folder.")
 parser.add_argument("-cd", "--changedir" , default=False                              , action="store_true", help="Mode: change directory to folder.")
-parser.add_argument("-l" , "--list"      , const="all", nargs='?', choices=["all","log","slide","cheatsheet","paper"], action="store", help="List pdf contents (default: all) and exit.")
+parser.add_argument("-ls", "--list"      , default=False                              , action="store_true", help="List/Select contents. (Very handy!)")
 
 parser.add_argument(       "--verbose"   , default=False                              , action="store_true", help="Print more messages.")
 parser.add_argument(       "--version"   ,                                              action="version", version='%(prog)s ' + __version__)
 args = parser.parse_args()
 
-# --list first
-if args.list:
-  subprocess.check_call("ls %s/data/log/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="log" else None
-  subprocess.check_call("ls %s/data/slide/*/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="slide" else None
-  subprocess.check_call("ls %s/data/cheatsheet/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="cheatsheet" else None
-  subprocess.check_call("ls %s/data/paper/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) if args.list=="all" or args.list=="paper" else None
-  sys.exit()
-
-# Check arguments
-args.date=Date(args.date)
-
-# Set default type to be "log"
-typeflag = { "log":False, "slide":args.slide, "cheatsheet":args.cheatsheet, "paper":args.paper }
-if sum(typeflag.values()) == 0:
-  typeflag["log"] = True
-elif sum(typeflag.values()) > 1:
-  printf("Typeflag is %s" % typeflag, "err")
-  printf("More than one type", "err")
-  sys.exit()
-
-for key, value in typeflag.iteritems():
-  if key != "log" and value == True  and args.title == None:
-    printf("Type %s requires --title" % key, "err")
-    sys.exit()
-
-# Set default mode to be "create"
+# Initialize the modeflag and typeflag
 if args.copy:
   copyflag = True
 else:
   copyflag = False
-modeflag = { "create":False, "view":args.view, "copy":copyflag, "changedir":args.changedir }
+modeflag = { "create":args.create, "view":args.view, "copy":copyflag, "changedir":args.changedir }
+typeflag = { "log":args.log, "slide":args.slide, "cheatsheet":args.cheatsheet, "paper":args.paper }
+
+# --list only (ie. without modeflag) and exit
+if args.list and sum(modeflag.values())==0:
+  for typekey,typevalue in typeflag.iteritems():
+    if typevalue == True or sum(typeflag.values())==0:
+      printf("List of %s:" % typekey)
+      List(LogDirPath + "/data/" + typekey)
+      print ""
+  sys.exit()
+
+# Set default type to be "log" and ensure there is only one type
+if sum(typeflag.values()) == 0:
+  typeflag["log"] = True
+elif sum(typeflag.values()) > 1:
+  printf("Typeflag is %s." % typeflag, "error")
+  printf("More than one typeflag! Exiting ...", "error")
+  sys.exit()
+
+# Set default mode to be "create" and ensure there is only one mode
 if sum(modeflag.values()) == 0:
   modeflag["create"] = True
 elif sum(modeflag.values()) > 1:
-  printf("Modeflag is %s" % modeflag, "err")
-  printf("More than one mode.", "err")
+  printf("Modeflag is %s." % modeflag, "error")
+  printf("More than one modeflag! Exiting ...", "error")
   sys.exit()
 
+# --list with modeflag enabled
+if args.list:
+  TEXEXTENSION = ".pdf"
+  for typekey,typevalue in typeflag.iteritems():
+    if typevalue == True:
+      if typekey == "create":
+        TEXEXTENSION = ".tex"
+      printf("List of %s:" % typekey)
+      TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath + "/data/" + typekey, ext=TEXEXTENSION, savepath=True)
+      printf("TEXDIRPATH is set to be %s ." % TEXDIRPATH, "verbose") if args.verbose else None
+      printf("TEXNAME is set to be %s ." % TEXNAME, "verbose") if args.verbose else None
+      printf("TEXEXTENSION is set to be %s ." % TEXEXTENSION, "verbose") if args.verbose else None
+      break
+else:
+  # Check arguments
+  args.date=Date(args.date)
+  for key, value in typeflag.iteritems():
+    if key != "log" and value == True  and args.title == None:
+      printf("Type %s requires --title. Exiting ..." % key, "error")
+      sys.exit()
 
 if args.verbose:
   for value in args.__dict__:
-    printf("--%s = %s" % (value, args.__dict__[value]), "verbose")
-
+    printf("%12s = %s" % ("--" + value, args.__dict__[value]), "verbose")
 
 #=======================================================================================
 # Main
 #=======================================================================================
-# Setup TexName, TexPdfPath etc.
-if typeflag["log"]:
-  printf("Tex type is log","verbose") if args.verbose else None
-  TEXNAME    = "log"
-  TEXDIRPATH = LogDirPath + "/data/log/" + Date(args.date, dt=args.delta_days, dayofweek=0)
-elif typeflag["slide"]:
-  printf("Tex type is slide","verbose") if args.verbose else None
-  TEXNAME    = Date(args.date) + "_" + args.title.replace(" ","_")
-  TEXDIRPATH = LogDirPath + "/data/slide/" + args.slidetype.replace (" ", "_") + "/" + TEXNAME
-elif typeflag["cheatsheet"]:
-  printf("Tex type is cheatsheet","verbose") if args.verbose else None
-  TEXNAME    = args.title.replace(" ","_")
-  TEXDIRPATH = LogDirPath + "/data/cheatsheet"
-  subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
-elif typeflag["paper"]:
-  printf("Tex type is paper","verbose") if args.verbose else None
-  TEXNAME    = args.title.replace(" ","_")
-  TEXDIRPATH = LogDirPath + "/data/paper"
-  subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
-else:
-  printf("Typeflag is undefined", "err")
-  sys.exit()
+# If it didnt be set, then setup TEXNAME, TEXDIRPATH etc.
+try:
+  TEXNAME
+  TEXDIRPATH
+except:
+  printf("TEXNAME and TEXDIRPATH are not defined yet. Defining ...", "verbose") if args.verbose == True else None
+  if typeflag["log"]:
+    printf("Typeflag is log.","verbose") if args.verbose else None
+    TEXNAME    = "log"
+    TEXDIRPATH = LogDirPath + "/data/log/" + Date(args.date, dt=args.delta_days, dayofweek=0)
+  elif typeflag["slide"]:
+    printf("Typeflag is slide.","verbose") if args.verbose else None
+    TEXNAME    = Date(args.date) + "_" + args.title.replace(" ","_")
+    TEXDIRPATH = LogDirPath + "/data/slide/" + args.slidetype.replace (" ", "_") + "/" + TEXNAME
+  elif typeflag["cheatsheet"]:
+    printf("Typeflag is cheatsheet.","verbose") if args.verbose else None
+    TEXNAME    = args.title.replace(" ","_")
+    TEXDIRPATH = LogDirPath + "/data/cheatsheet"
+    subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+  elif typeflag["paper"]:
+    printf("Typeflag is paper.","verbose") if args.verbose else None
+    TEXNAME    = args.title.replace(" ","_")
+    TEXDIRPATH = LogDirPath + "/data/paper"
+    subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+  else:
+    printf("Typeflag is undefined! Exiting ...", "error")
+    sys.exit()
 
-TEXFILE    = TEXNAME + ".tex"
-TEXTEXPATH = TEXDIRPATH + "/" + TEXFILE
+TEXTEXPATH = TEXDIRPATH + "/" + TEXNAME + ".tex"
 TEXPDFPATH = TEXDIRPATH + "/" + TEXNAME + ".pdf"
 printf("The tex directory path is %s" % TEXDIRPATH, "verbose") if args.verbose else None
 
@@ -313,28 +434,29 @@ if modeflag["create"]:
   if typeflag["log"] == True or typeflag["slide"] == True:
     # Create the tex file if it doesnt exist
     if os.path.isfile(TEXTEXPATH):
-      printf("The %s exists." % TEXFILE)
+      printf("The %s exists." % TEXNAME + ".tex")
     else:
-      printf("The %s doesnt exist. Creating ..." % TEXFILE)
+      printf("The %s doesnt exist. Creating ..." % TEXNAME + ".tex")
       subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
       if typeflag["log"]:
         print_log_tex()
       elif typeflag["slide"]:
         print_slide_tex()
         subprocess.check_call("cp " + LogDirPath + "/" + RelSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
-      printf("The %s is created" % TEXFILE, "verbose") if args.verbose else None
+      printf("The %s is created." % TEXNAME + ".tex", "verbose") if args.verbose else None
 
     time_update_before = os.path.getmtime(TEXTEXPATH)
-    printf(time_update_before, "verbose") if args.verbose else None
+    printf("The time of last modification before editing is %s." % datetime.fromtimestamp(time_update_before).strftime('%Y-%m-%d %H:%M:%S'), "verbose") if args.verbose else None
    
-    printf("Editing %s ..." % TEXFILE)
+    printf("Editing %s ..." % TEXNAME + ".tex")
     os.system(TexEditor + " " + TEXTEXPATH + " " + TexEditorOptions)
 
     time_update_after = os.path.getmtime(TEXTEXPATH)
-    printf(time_update_after, "verbose") if args.verbose else None
+    printf("The time of last modification after editing is %s." % datetime.fromtimestamp(time_update_after).strftime('%Y-%m-%d %H:%M:%S'), "verbose") if args.verbose else None
 
     if (time_update_after > time_update_before):
-      printf("Compiling %s ..." % TEXFILE)
+      printf("The file get updated after editing!", "verbose") if args.verbose else None
+      printf("Compiling %s ..." % TEXNAME + ".tex")
       os.chdir(TEXDIRPATH)
       subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
       subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
@@ -350,34 +472,28 @@ if modeflag["create"]:
     else:
       printf("The tex file didnt be modified. Wont start compilation.")
   else:
-    printf("Typeflag is not defined for create mode", "err")
+    printf("Typeflag is not defined for create mode.", "error")
     sys.exit()
 
 elif modeflag["view"]:
   if os.path.isfile(TEXPDFPATH):
     subprocess.check_call(PDFReader + " " + TEXPDFPATH, stdout=subprocess.PIPE, shell=True)
   else:
-    printf("The %s.pdf doesnt exist." % TEXNAME, "err")
-    printf("All pdf in the folder will be listed")
-    print ""
-    subprocess.check_call("ls %s/data/log/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True) 
-    subprocess.check_call("ls %s/data/slide/*/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True)
-    subprocess.check_call("ls %s/data/cheatsheet/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True)
-    subprocess.check_call("ls %s/data/paper/*/*.pdf | awk '{print $1}' | sed 's/^/%s /g'" % (LogDirPath, PDFReader), shell=True)
+    printf("The %s.pdf doesnt exist." % TEXNAME, "error")
+    if query_yes_no("Do you want to list all pdf in the data directory?") == "yes":
+      List(LogDirPath)
     sys.exit()
 
 elif modeflag["copy"]:
   printf("cp -t %s %s" % (TEXDIRPATH, args.copy)) if args.verbose else None
   subprocess.check_call("cp -r -t %s %s" % (TEXDIRPATH, args.copy), stdout=subprocess.PIPE, shell=True)
-  printf(args.copy + " is copied to " + TEXDIRPATH + " successfully")
+  printf(args.copy + " is copied to " + TEXDIRPATH + " successfully.")
 
 elif modeflag["changedir"]:
-  printf("Type the following command")
+  printf("Type the following command.")
   print "cd %s" % TEXDIRPATH
 
 else:
-  printf("Modeflag is undefined","err")
+  printf("Modeflag is undefined! Exiting ...","error")
   sys.exit()
-
-printf("Done!")
 
