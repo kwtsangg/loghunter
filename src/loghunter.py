@@ -13,9 +13,9 @@ __email__      = "kwtsang@nikhef.nl"
 """
 Description="""
        A program to 1) create tex                 (log, slide)
-                    2) view pdf                   (log, slide, cheatsheet, paper)
-                    3) copy files to folder       (log, slide, cheatsheet, paper)
-                    4) change directory to folder (log, slide, cheatsheet, paper) 
+                    2) view pdf, djvu             (log, slide, cheatsheet, paper, presentation, book)
+                    3) copy files to folder       (log, slide, cheatsheet, paper, presentation, book)
+                    4) change directory to folder (log, slide, cheatsheet, paper, presentation. book) 
 
        Default 1) type is log 
                2) mode is create
@@ -56,11 +56,12 @@ Description="""
        08-Dec-2016 Added a handy --list option.
                    Modified the argparse shorthand.
                    version tag = 1.1.1
+                   Minor fix to the printf statement
+                   version tag = 1.1.2
+                   Included extension apart from ".pdf"
+                   Completed --copy mode
+                   Added types (presentation, book and other)
 """
-
-#   TODO:
-#   1. Change slidetype to subtype.
-#   2. Include type other than the current existing type.
 
 #=======================================================================================
 # Module/package import
@@ -121,17 +122,16 @@ def Date(date, dt=0, dayofweek=None, dateformat="%Y%m%d"):
       printf("Ignoring the dayofweek option in the Date function ...", "warning")
   return d.strftime(dateformat)
 
-def List(path, ext=".pdf", savepath=False):
+def List(path, ext=[".pdf", ".djvu"], savepath=False):
   """
     To obtain the absolute path of all files under "path" with "extension"
-    Assumption: PDFReader is used to perform the "autoread" option!
-    Optional: "savepath", if true, return [AbsPath,Name,Ext] of the target file
+    Optional: "savepath", if true, return [AbsPath,Name,Ext] of the target file, if any
   """
   ArrayAbsPath = []
   # To obtain all files (with absolute path under "path") and store in ArrayFullPath
   for dirPath, dirName, fileName in os.walk(path):
     for iter_fileName in fileName:
-      if os.path.splitext(iter_fileName)[1] == ext:
+      if os.path.splitext(iter_fileName)[1] in ext:
         ArrayAbsPath.append([dirPath,os.path.splitext(iter_fileName)[0],os.path.splitext(iter_fileName)[1]])
   # If ArrayAbsPath not empty:
   if ArrayAbsPath:
@@ -154,7 +154,7 @@ def List(path, ext=".pdf", savepath=False):
           print ""
           printf("User terminates the loghunter. Good Bye!")
           sys.exit()
-        except:
+        except: 
           printf("Unknown file index. Exiting ...", "error")
           sys.exit()
     elif savepath!=False:
@@ -163,6 +163,12 @@ def List(path, ext=".pdf", savepath=False):
   # If empty:
   else:
     printf("No file with extension (%s) is found in the path of %s" % (ext,path))
+    if savepath==True:
+      printf("Expected return value from the List function is missing. Exiting ...", "error")
+      sys.exit()
+    elif savepath!=False:
+      printf("Unknown value for savepath in the List function !", "warning")
+      printf("Ignoring the savepath option in the List function ...", "warning")
 
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
@@ -263,7 +269,7 @@ def print_slide_tex():
   TEXOBJECT.write('%s\n' % (r"\subtitle{Subtitle}"))
   TEXOBJECT.write('%s\n' % (r"\author{" + __author__ +  "}"))
   TEXOBJECT.write('%s\n' % (r"\institute[Nikhef]{National Institute for Subatomic Physics (Nikhef)}"))
-  TEXOBJECT.write('%s\n' % (r"\date[" + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d") + "]{" + args.slidetype.replace ("_", " ") + ", " + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d" + "}")))
+  TEXOBJECT.write('%s\n' % (r"\date[" + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d") + "]{" + args.subtype.replace ("_", " ") + ", " + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d" + "}")))
   TEXOBJECT.write('%s\n' % (r"\titlegraphic{\includegraphics[width=3cm, keepaspectratio]{Nikhef-400x177.png}}"))
   TEXOBJECT.write('%s\n' % (r""))
 
@@ -318,22 +324,26 @@ def print_slide_tex():
 parser = argparse.ArgumentParser(description=textwrap.dedent(Description), prog=__file__, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-d ", "--date"      , default=datetime.today().strftime("%Y%m%d"), action="store", type=int, help="Date in YYYYMMDD format. (default: today)")
 parser.add_argument("-dt", "--delta-days", default=0                                  , action="store", type=int, help="Number of days before/after the --date. eg. -1 means yesterday.")
-parser.add_argument("-st", "--slidetype" , default="group meeting", choices=["group meeting","conference","CBC meeting"], action="store", help="Classification of the slide.")
+parser.add_argument("-st", "--subtype"   ,                                              action="store", help="For further classification in each type.")
 parser.add_argument("-tt", "--title"                                                  , action="store")
 
-parser.add_argument("-lg", "--log"       , default=False                              , action="store_true", help="Type: log. (Default)")
-parser.add_argument("-sl", "--slide"     , default=False                              , action="store_true", help="Type: slide. Please include --date, --slidetype and --title.")
-parser.add_argument("-ch", "--cheatsheet", default=False                              , action="store_true", help="Type: cheatsheet. Please include --title.")
-parser.add_argument("-pp", "--paper"     , default=False                              , action="store_true", help="Type: paper. Please include --title.")
+parser.add_argument("-lg", "--log"          , default=False, action="store_true", help="Type: log. (Default)")
+parser.add_argument("-sl", "--slide"        , default=False, action="store_true", help="Type: slide. Please include --date, --subtype and --title.")
+parser.add_argument("-ch", "--cheatsheet"   , default=False, action="store_true", help="Type: cheatsheet.")
+parser.add_argument("-pp", "--paper"        , default=False, action="store_true", help="Type: paper.")
+parser.add_argument("-pt", "--presentation" , default=False, action="store_true", help="Type: past presentation by others.")
+parser.add_argument("-bk", "--book"         , default=False, action="store_true", help="Type: book.")
+parser.add_argument(       "--other"        , default=False, action="store_true", help="Type: other.")
 
-parser.add_argument("-cr", "--create"    , default=False                              , action="store_true", help="Mode: create the tex. (Default)")
-parser.add_argument("-v ", "--view"      , default=False                              , action="store_true", help="Mode: view the pdf.")
-parser.add_argument("-cp", "--copy"                                                   , action="store"     , help="Mode: copy files to folder.")
-parser.add_argument("-cd", "--changedir" , default=False                              , action="store_true", help="Mode: change directory to folder.")
-parser.add_argument("-ls", "--list"      , default=False                              , action="store_true", help="List/Select contents. (Very handy!)")
+parser.add_argument("-cr", "--create"    , default=False, action="store_true", help="Mode: create the tex. (Default)")
+parser.add_argument("-v ", "--view"      , default=False, action="store_true", help="Mode: view the pdf.")
+parser.add_argument("-cp", "--copy"                     , action="store"     , help="Mode: copy files to folder.")
+parser.add_argument("-cd", "--changedir" , default=False, action="store_true", help="Mode: change directory to folder.")
 
-parser.add_argument(       "--verbose"   , default=False                              , action="store_true", help="Print more messages.")
-parser.add_argument(       "--version"   ,                                              action="version", version='%(prog)s ' + __version__)
+parser.add_argument("-ls", "--list" , default=False, action="store_true", help="List/Select contents. (Very handy!)")
+
+parser.add_argument(       "--verbose"   , default=False, action="store_true", help="Print more messages.")
+parser.add_argument(       "--version"   ,                action="version", version='%(prog)s ' + __version__)
 args = parser.parse_args()
 
 # Initialize the modeflag and typeflag
@@ -342,23 +352,15 @@ if args.copy:
 else:
   copyflag = False
 modeflag = { "create":args.create, "view":args.view, "copy":copyflag, "changedir":args.changedir }
-typeflag = { "log":args.log, "slide":args.slide, "cheatsheet":args.cheatsheet, "paper":args.paper }
+typeflag = { "log":args.log, "slide":args.slide, "cheatsheet":args.cheatsheet, "paper":args.paper, "presentation":args.presentation, "book":args.book, "other":args.other }
 
-# --list only (ie. without modeflag) and exit
+# if --list only (ie. without modeflag) and exit
 if args.list and sum(modeflag.values())==0:
   for typekey,typevalue in typeflag.iteritems():
     if typevalue == True or sum(typeflag.values())==0:
       printf("List of %s:" % typekey)
       List(LogDirPath + "/data/" + typekey)
       print ""
-  sys.exit()
-
-# Set default type to be "log" and ensure there is only one type
-if sum(typeflag.values()) == 0:
-  typeflag["log"] = True
-elif sum(typeflag.values()) > 1:
-  printf("Typeflag is %s." % typeflag, "error")
-  printf("More than one typeflag! Exiting ...", "error")
   sys.exit()
 
 # Set default mode to be "create" and ensure there is only one mode
@@ -369,27 +371,64 @@ elif sum(modeflag.values()) > 1:
   printf("More than one modeflag! Exiting ...", "error")
   sys.exit()
 
-# --list with modeflag enabled
+# if --list with modeflag enabled
 if args.list:
-  TEXEXTENSION = ".pdf"
-  for typekey,typevalue in typeflag.iteritems():
-    if typevalue == True:
-      if typekey == "create":
-        TEXEXTENSION = ".tex"
-      printf("List of %s:" % typekey)
-      TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath + "/data/" + typekey, ext=TEXEXTENSION, savepath=True)
-      printf("TEXDIRPATH is set to be %s ." % TEXDIRPATH, "verbose") if args.verbose else None
-      printf("TEXNAME is set to be %s ." % TEXNAME, "verbose") if args.verbose else None
-      printf("TEXEXTENSION is set to be %s ." % TEXEXTENSION, "verbose") if args.verbose else None
-      break
-else:
-  # Check arguments
-  args.date=Date(args.date)
-  for key, value in typeflag.iteritems():
-    if key != "log" and value == True  and args.title == None:
-      printf("Type %s requires --title. Exiting ..." % key, "error")
-      sys.exit()
+  _TEXEXTENSION = [".pdf", ".djvu"]
+  if modeflag["create"] == True:
+    _TEXEXTENSION = [".tex"]
 
+  if sum(typeflag.values()) == 0:
+    TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath+"/data/", ext=_TEXEXTENSION, savepath=True)
+  elif sum(typeflag.values()) == 1:
+    for typekey,typevalue in typeflag.iteritems():
+      if typevalue == True:
+        printf("List of %s:" % typekey)
+        TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath + "/data/" + typekey, ext=_TEXEXTENSION, savepath=True)
+  else:
+    printf("Typeflag is %s." % typeflag, "error")
+    printf("More than one typeflag! Exiting ...", "error")
+    sys.exit()
+
+  if args.verbose:
+    printf("TEXDIRPATH is set to be %s ." % TEXDIRPATH, "verbose")
+    printf("TEXNAME is set to be %s ." % TEXNAME, "verbose")
+    printf("TEXEXTENSION is set to be %s ." % TEXEXTENSION, "verbose")
+
+# Set default type to be "log" and ensure there is only one type
+if sum(typeflag.values()) == 0:
+  typeflag["log"] = True
+elif sum(typeflag.values()) > 1:
+  printf("Typeflag is %s." % typeflag, "error")
+  printf("More than one typeflag! Exiting ...", "error")
+  sys.exit()
+
+# if --list disabled (Default)
+if not args.list:
+  # Check arguments
+  # Check the validity of date
+  args.date=Date(args.date)
+  # Check whether --title or --subtype are missing
+  for typekey, typevalue in typeflag.iteritems():
+    for modekey, modevalue in modeflag.iteritems():
+      if typekey in ["slide", "paper", "presentation", "book"] and typevalue == True:
+        if modekey in ["create", "view"] and modevalue == True:
+          if args.title == None or args.subtype == None:
+            printf("Type %s in mode %s requires both --title and --subtype. Exiting ..." % (typekey, modekey), "error")
+            sys.exit()
+        if modekey in ["copy", "changedir"] and modevalue == True:
+          if args.subtype == None:
+            printf("Type %s in mode %s requires --subtype. Exiting ..." % (typekey, modekey), "error")
+            sys.exit()
+          if args.title == None:
+            args.title = "Arbitrary"
+            printf("args.title is set to be Arbitrary because it will not be used.", "verbose") if args.verbose == True else None
+      if typekey in ["cheatsheet", "other"] and typevalue == True:
+        if modekey in ["create", "view"] and modevalue == True:
+          if args.title == None:
+            printf("Type %s in mode %s requires --title. Exiting ..." % (typekey, modekey), "error")
+            sys.exit()
+
+# verbose
 if args.verbose:
   for value in args.__dict__:
     printf("%12s = %s" % ("--" + value, args.__dict__[value]), "verbose")
@@ -397,12 +436,9 @@ if args.verbose:
 #=======================================================================================
 # Main
 #=======================================================================================
-# If it didnt be set, then setup TEXNAME, TEXDIRPATH etc.
-try:
-  TEXNAME
-  TEXDIRPATH
-except:
-  printf("TEXNAME and TEXDIRPATH are not defined yet. Defining ...", "verbose") if args.verbose == True else None
+# If TEXNAME, TEXDIRPATH didnt be set, then set it.
+if not args.list:
+  printf("Defining TEXNAME and TEXDIRPATH ...", "verbose") if args.verbose == True else None
   if typeflag["log"]:
     printf("Typeflag is log.","verbose") if args.verbose else None
     TEXNAME    = "log"
@@ -410,23 +446,43 @@ except:
   elif typeflag["slide"]:
     printf("Typeflag is slide.","verbose") if args.verbose else None
     TEXNAME    = Date(args.date) + "_" + args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/slide/" + args.slidetype.replace (" ", "_") + "/" + TEXNAME
+    TEXDIRPATH = LogDirPath + "/data/slide/" + args.subtype.replace (" ", "_") + "/" + TEXNAME
   elif typeflag["cheatsheet"]:
     printf("Typeflag is cheatsheet.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
     TEXDIRPATH = LogDirPath + "/data/cheatsheet"
-    subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
   elif typeflag["paper"]:
     printf("Typeflag is paper.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/paper"
-    subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+    TEXDIRPATH = LogDirPath + "/data/paper/" + args.subtype.replace (" ", "_")
+  elif typeflag["presentation"]:
+    printf("Typeflag is presentation.","verbose") if args.verbose else None
+    TEXNAME    = args.title.replace(" ","_")
+    TEXDIRPATH = LogDirPath + "/data/presentation/" + args.subtype.replace (" ", "_")
+  elif typeflag["book"]:
+    printf("Typeflag is book.","verbose") if args.verbose else None
+    TEXNAME    = args.title.replace(" ","_")
+    TEXDIRPATH = LogDirPath + "/data/book/" + args.subtype.replace (" ", "_")
+  elif typeflag["other"]:
+    printf("Typeflag is other.","verbose") if args.verbose else None
+    TEXNAME    = args.title.replace(" ","_")
+    TEXDIRPATH = LogDirPath + "/data/other"
   else:
     printf("Typeflag is undefined! Exiting ...", "error")
     sys.exit()
+  # Assumption: It is always ".pdf".
+  printf("Assumption: TEXEXTENSION is .pdf", "verbose") if args.verbose else None
+  TEXEXTENSION = ".pdf"
+  if not os.path.isdir(TEXDIRPATH):
+    printf("The target directory (%s) doesnt exist." % TEXDIRPATH)
+    if query_yes_no("Do you really want to create it?" , default="no")=="yes":
+      subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+    else:
+      printf("You dont want to create the target directory (%s). Exiting ..." % TEXDIRPATH)
+      sys.exit()
 
 TEXTEXPATH = TEXDIRPATH + "/" + TEXNAME + ".tex"
-TEXPDFPATH = TEXDIRPATH + "/" + TEXNAME + ".pdf"
+TEXEXTPATH = TEXDIRPATH + "/" + TEXNAME + TEXEXTENSION
 printf("The tex directory path is %s" % TEXDIRPATH, "verbose") if args.verbose else None
 
 # Modeflag
@@ -437,7 +493,6 @@ if modeflag["create"]:
       printf("The %s exists." % (TEXNAME + ".tex"))
     else:
       printf("The %s doesnt exist. Creating ..." % (TEXNAME + ".tex"))
-      subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
       if typeflag["log"]:
         print_log_tex()
       elif typeflag["slide"]:
@@ -476,22 +531,26 @@ if modeflag["create"]:
     sys.exit()
 
 elif modeflag["view"]:
-  if os.path.isfile(TEXPDFPATH):
-    subprocess.check_call(PDFReader + " " + TEXPDFPATH, stdout=subprocess.PIPE, shell=True)
+  if os.path.isfile(TEXEXTPATH):
+    subprocess.check_call(PDFReader + " " + TEXEXTPATH, stdout=subprocess.PIPE, shell=True)
   else:
-    printf("The %s.pdf doesnt exist." % TEXNAME, "error")
+    printf("The %s doesnt exist." % TEXEXTPATH, "error")
     if query_yes_no("Do you want to list all pdf in the data directory?") == "yes":
-      List(LogDirPath)
+      List(LogDirPath+"/data/")
     sys.exit()
 
 elif modeflag["copy"]:
-  printf("cp -t %s %s" % (TEXDIRPATH, args.copy)) if args.verbose else None
-  subprocess.check_call("cp -r -t %s %s" % (TEXDIRPATH, args.copy), stdout=subprocess.PIPE, shell=True)
-  printf(args.copy + " is copied to " + TEXDIRPATH + " successfully.")
+  if os.path.exists(args.copy) and os.path.isdir(TEXDIRPATH):
+    printf("cp -t %s %s" % (TEXDIRPATH, args.copy)) if args.verbose else None
+    subprocess.check_call("cp -r -t %s %s" % (TEXDIRPATH, args.copy), stdout=subprocess.PIPE, shell=True)
+    printf(args.copy + " is copied to " + TEXDIRPATH + " successfully.")
+  else:
+    printf("The path provided (%s) in copy mode or the target directory (%s) dont exist! Exiting ..." % (args.copy, TEXDIRPATH), "error")
+    sys.exit()
 
 elif modeflag["changedir"]:
   printf("Type the following command.")
-  print "cd %s" % TEXDIRPATH
+  printf("cd %s" % TEXDIRPATH)
 
 else:
   printf("Modeflag is undefined! Exiting ...","error")
