@@ -434,21 +434,21 @@ if modeflag["create"]:
   if typeflag["log"] == True or typeflag["slide"] == True:
     # Create the tex file if it doesnt exist
     if os.path.isfile(TEXTEXPATH):
-      printf("The %s exists." % TEXNAME + ".tex")
+      printf("The %s exists." % (TEXNAME + ".tex"))
     else:
-      printf("The %s doesnt exist. Creating ..." % TEXNAME + ".tex")
+      printf("The %s doesnt exist. Creating ..." % (TEXNAME + ".tex"))
       subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
       if typeflag["log"]:
         print_log_tex()
       elif typeflag["slide"]:
         print_slide_tex()
         subprocess.check_call("cp " + LogDirPath + "/" + RelSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
-      printf("The %s is created." % TEXNAME + ".tex", "verbose") if args.verbose else None
+      printf("The %s is created." % (TEXNAME + ".tex"), "verbose") if args.verbose else None
 
     time_update_before = os.path.getmtime(TEXTEXPATH)
     printf("The time of last modification before editing is %s." % datetime.fromtimestamp(time_update_before).strftime('%Y-%m-%d %H:%M:%S'), "verbose") if args.verbose else None
    
-    printf("Editing %s ..." % TEXNAME + ".tex")
+    printf("Editing %s ..." % (TEXNAME + ".tex"))
     os.system(TexEditor + " " + TEXTEXPATH + " " + TexEditorOptions)
 
     time_update_after = os.path.getmtime(TEXTEXPATH)
@@ -456,7 +456,7 @@ if modeflag["create"]:
 
     if (time_update_after > time_update_before):
       printf("The file get updated after editing!", "verbose") if args.verbose else None
-      printf("Compiling %s ..." % TEXNAME + ".tex")
+      printf("Compiling %s ..." % (TEXNAME + ".tex"))
       os.chdir(TEXDIRPATH)
       subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
       subprocess.check_call("pdflatex -halt-on-error %s" % (TEXTEXPATH), stdout=subprocess.PIPE, shell=True)
