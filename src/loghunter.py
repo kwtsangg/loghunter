@@ -2,7 +2,7 @@
 __file__       = "loghunter"
 __author__     = "Ka Wa Tsang"
 __copyright__  = "Copyright 2016"
-__version__    = "1.1.1"
+__version__    = "1.1.3"
 __email__      = "kwtsang@nikhef.nl"
 
 """
@@ -61,6 +61,7 @@ Description="""
                    Included extension apart from ".pdf"
                    Completed --copy mode
                    Added types (presentation, book and other)
+                   version tag = 1.1.3
 """
 
 #=======================================================================================
