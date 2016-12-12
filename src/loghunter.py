@@ -428,6 +428,10 @@ if not args.list:
           if args.title == None:
             printf("Type %s in mode %s requires --title. Exiting ..." % (typekey, modekey), "error")
             sys.exit()
+        if modekey in ["copy", "changedir"] and modevalue == True:
+          if args.title == None:
+            args.title = "Arbitrary"
+            printf("args.title is set to be Arbitrary because it will not be used.", "verbose") if args.verbose == True else None
 
 # verbose
 if args.verbose:
