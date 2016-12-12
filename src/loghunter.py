@@ -479,7 +479,7 @@ if not args.list:
     if query_yes_no("Do you really want to create it?" , default="no")=="yes":
       subprocess.check_call("mkdir -p %s" % TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
     else:
-      printf("You dont want to create the target directory (%s). Exiting ..." % TEXDIRPATH)
+      printf("You dont want to create the target directory. Exiting ...")
       sys.exit()
 
 TEXTEXPATH = TEXDIRPATH + "/" + TEXNAME + ".tex"
