@@ -12,10 +12,10 @@ __email__      = "kwtsang@nikhef.nl"
        Ka Wa TSANG
 """
 Description="""
-       A program to 1) create tex                 (log, slide)
-                    2) view pdf, djvu             (log, slide, cheatsheet, paper, presentation, book)
-                    3) copy files to folder       (log, slide, cheatsheet, paper, presentation, book)
-                    4) change directory to folder (log, slide, cheatsheet, paper, presentation. book) 
+       A program to 1) create tex                 (log, slide, research)
+                    2) view pdf, djvu             (log, slide, research, cheatsheet, paper, presentation, book)
+                    3) copy files to folder       (log, slide, research, cheatsheet, paper, presentation, book)
+                    4) change directory to folder (log, slide, research, cheatsheet, paper, presentation. book) 
 
        Default 1) type is log 
                2) mode is create
@@ -23,6 +23,7 @@ Description="""
        Example Usage 1) loghunter             To create the log of this week
                      2) loghunter -v          To view the log pdf of this week
                      3) loghunter -v -dt -7   To view the log pdf of last week
+                     4) loghunter -ls -v      To view the pdf by entering the corresponding index
        """
 """
   History:
@@ -62,6 +63,7 @@ Description="""
                    Completed --copy mode
                    Added types (presentation, book and other)
                    version tag = 1.1.3
+       21-Jan-2017 Added research type
 """
 
 #=======================================================================================
@@ -317,6 +319,40 @@ def print_slide_tex():
   TEXOBJECT.write('%s\n' % (r""))
   TEXOBJECT.write('%s\n' % (r"\end{document}"))
 
+def print_research_tex():
+  TEXOBJECT = open (TEXTEXPATH,"w+")
+  TEXOBJECT.write('%s\n' % (r"\documentclass[a4paper,12pt]{article}" ))
+  TEXOBJECT.write('%s\n' % (r"\usepackage{geometry}"))
+  TEXOBJECT.write('%s\n' % (r"\usepackage{graphicx}"))
+  TEXOBJECT.write('%s\n' % (r"\usepackage{amsmath}"))
+  TEXOBJECT.write('%s\n' % (r"\usepackage{hyperref}"))
+  TEXOBJECT.write('%s\n' % (r"\usepackage{physics}"))
+  TEXOBJECT.write('%s\n' % (r"\usepackage{longtable}"))
+  TEXOBJECT.write('%s\n' % (r"\usepackage{url}"))
+  TEXOBJECT.write('%s\n' % (r"\geometry{"))
+  TEXOBJECT.write('%s\n' % (r" a4paper,"))
+  TEXOBJECT.write('%s\n' % (r" total={170mm,257mm},"))
+  TEXOBJECT.write('%s\n' % (r" left=20mm,"))
+  TEXOBJECT.write('%s\n' % (r" top=20mm,"))
+  TEXOBJECT.write('%s\n' % (r"}"))
+  TEXOBJECT.write('%s\n' % (r""))
+  
+  TEXOBJECT.write('%s\n' % (r"%Title page"))
+  TEXOBJECT.write('%s\n' % (r"\title{Research Progress - " + args.subtype + "}"))
+  TEXOBJECT.write('%s\n' % (r"\author{" + __author__ +  "}"))
+  TEXOBJECT.write('%s\n' % (r"\date{\today}"))
+  TEXOBJECT.write('%s\n' % (r""))
+ 
+  TEXOBJECT.write('%s\n' % (r"\begin{document}" ))
+  TEXOBJECT.write('%s\n' % (r"\maketitle"))
+  TEXOBJECT.write('%s\n' % (r""))
+  
+  TEXOBJECT.write('%s\n' % (r"%Contents"))
+
+  TEXOBJECT.write('%s\n' % (r""))
+  TEXOBJECT.write('%s\n' % (r""))
+  TEXOBJECT.write('%s\n' % (r"\end{document}"))
+  TEXOBJECT.close()
 
 #=======================================================================================
 # Preliminary
@@ -334,6 +370,7 @@ parser.add_argument("-ch", "--cheatsheet"   , default=False, action="store_true"
 parser.add_argument("-pp", "--paper"        , default=False, action="store_true", help="Type: paper.")
 parser.add_argument("-pt", "--presentation" , default=False, action="store_true", help="Type: past presentation by others.")
 parser.add_argument("-bk", "--book"         , default=False, action="store_true", help="Type: book.")
+parser.add_argument("-rs", "--research"     , default=False, action="store_true", help="Type: research. Please include --subtype.")
 parser.add_argument(       "--other"        , default=False, action="store_true", help="Type: other.")
 
 parser.add_argument("-cr", "--create"    , default=False, action="store_true", help="Mode: create the tex. (Default)")
@@ -353,7 +390,7 @@ if args.copy:
 else:
   copyflag = False
 modeflag = { "create":args.create, "view":args.view, "copy":copyflag, "changedir":args.changedir }
-typeflag = { "log":args.log, "slide":args.slide, "cheatsheet":args.cheatsheet, "paper":args.paper, "presentation":args.presentation, "book":args.book, "other":args.other }
+typeflag = { "log":args.log, "slide":args.slide, "cheatsheet":args.cheatsheet, "paper":args.paper, "presentation":args.presentation, "book":args.book, "research":args.research, "other":args.other }
 
 # if --list only (ie. without modeflag) and exit
 if args.list and sum(modeflag.values())==0:
@@ -432,6 +469,11 @@ if not args.list:
           if args.title == None:
             args.title = "Arbitrary"
             printf("args.title is set to be Arbitrary because it will not be used.", "verbose") if args.verbose == True else None
+      if typekey in ["research"] and typevalue == True:
+        if modekey in ["create", "view", "copy", "changedir"] and modevalue == True:
+          if args.subtype == None:
+            printf("Type %s in mode %s requires --subtype. Exiting ..." % (typekey, modekey), "error")
+            sys.exit()
 
 # verbose
 if args.verbose:
@@ -468,6 +510,10 @@ if not args.list:
     printf("Typeflag is book.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
     TEXDIRPATH = LogDirPath + "/data/book/" + args.subtype.replace (" ", "_")
+  elif typeflag["research"]:
+    printf("Typeflag is research.","verbose") if args.verbose else None
+    TEXNAME    = args.subtype
+    TEXDIRPATH = LogDirPath + "/data/research/" + args.subtype
   elif typeflag["other"]:
     printf("Typeflag is other.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
@@ -492,7 +538,7 @@ printf("The tex directory path is %s" % TEXDIRPATH, "verbose") if args.verbose e
 
 # Modeflag
 if modeflag["create"]:
-  if typeflag["log"] == True or typeflag["slide"] == True:
+  if typeflag["log"] == True or typeflag["slide"] == True or typeflag["research"] == True:
     # Create the tex file if it doesnt exist
     if os.path.isfile(TEXTEXPATH):
       printf("The %s exists." % (TEXNAME + ".tex"))
@@ -503,6 +549,8 @@ if modeflag["create"]:
       elif typeflag["slide"]:
         print_slide_tex()
         subprocess.check_call("cp " + LogDirPath + "/" + RelSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+      elif typeflag["research"]:
+        print_research_tex()
       printf("The %s is created." % (TEXNAME + ".tex"), "verbose") if args.verbose else None
 
     time_update_before = os.path.getmtime(TEXTEXPATH)
