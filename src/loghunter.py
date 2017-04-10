@@ -82,8 +82,8 @@ from datetime import datetime, timedelta
 #=======================================================================================
 
 # Global Variable
-LogDirPath="/home/kwtsang/OneDrive_CUHK/mle/loghunter"
-RelSrcPath="src"
+LogDirPath="/home/kwtsang/Dropbox/loghunter_data"
+LogSrcPath="/home/kwtsang/OneDrive_CUHK/mle/loghunter/src"
 PDFReader="okular"
 TexEditor="vim"
 TexEditorOptions="+26"
@@ -249,12 +249,6 @@ def print_log_tex():
   TEXOBJECT.write('%s\n' % (r"\end{itemize}"))
   TEXOBJECT.write('%s\n' % (r""))
 
-  TEXOBJECT.write('%s\n' % (r"\section{Question}"))
-  TEXOBJECT.write('%s\n' % (r"\begin{itemize}"))
-  TEXOBJECT.write('%s\n' % (r"  \item "))
-  TEXOBJECT.write('%s\n' % (r"\end{itemize}"))
-  TEXOBJECT.write('%s\n' % (r""))
-
   TEXOBJECT.write('%s\n' % (r""))
   TEXOBJECT.write('%s\n' % (r"\end{document}"))
   TEXOBJECT.close()
@@ -397,7 +391,7 @@ if args.list and sum(modeflag.values())==0:
   for typekey,typevalue in typeflag.iteritems():
     if typevalue == True or sum(typeflag.values())==0:
       printf("List of %s:" % typekey)
-      List(LogDirPath + "/data/" + typekey)
+      List(LogDirPath + "/" + typekey)
       print ""
   sys.exit()
 
@@ -416,12 +410,12 @@ if args.list:
     _TEXEXTENSION = [".tex"]
 
   if sum(typeflag.values()) == 0:
-    TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath+"/data/", ext=_TEXEXTENSION, savepath=True)
+    TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath, ext=_TEXEXTENSION, savepath=True)
   elif sum(typeflag.values()) == 1:
     for typekey,typevalue in typeflag.iteritems():
       if typevalue == True:
         printf("List of %s:" % typekey)
-        TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath + "/data/" + typekey, ext=_TEXEXTENSION, savepath=True)
+        TEXDIRPATH, TEXNAME, TEXEXTENSION = List(LogDirPath + "/" + typekey, ext=_TEXEXTENSION, savepath=True)
   else:
     printf("Typeflag is %s." % typeflag, "error")
     printf("More than one typeflag! Exiting ...", "error")
@@ -489,35 +483,35 @@ if not args.list:
   if typeflag["log"]:
     printf("Typeflag is log.","verbose") if args.verbose else None
     TEXNAME    = "log"
-    TEXDIRPATH = LogDirPath + "/data/log/" + Date(args.date, dt=args.delta_days, dayofweek=0)
+    TEXDIRPATH = LogDirPath + "/log/" + Date(args.date, dt=args.delta_days, dayofweek=0)
   elif typeflag["slide"]:
     printf("Typeflag is slide.","verbose") if args.verbose else None
     TEXNAME    = Date(args.date) + "_" + args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/slide/" + args.subtype.replace (" ", "_") + "/" + TEXNAME
+    TEXDIRPATH = LogDirPath + "/slide/" + args.subtype.replace (" ", "_") + "/" + TEXNAME
   elif typeflag["cheatsheet"]:
     printf("Typeflag is cheatsheet.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/cheatsheet"
+    TEXDIRPATH = LogDirPath + "/cheatsheet"
   elif typeflag["paper"]:
     printf("Typeflag is paper.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/paper/" + args.subtype.replace (" ", "_")
+    TEXDIRPATH = LogDirPath + "/paper/" + args.subtype.replace (" ", "_")
   elif typeflag["presentation"]:
     printf("Typeflag is presentation.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/presentation/" + args.subtype.replace (" ", "_")
+    TEXDIRPATH = LogDirPath + "/presentation/" + args.subtype.replace (" ", "_")
   elif typeflag["book"]:
     printf("Typeflag is book.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/book/" + args.subtype.replace (" ", "_")
+    TEXDIRPATH = LogDirPath + "/book/" + args.subtype.replace (" ", "_")
   elif typeflag["research"]:
     printf("Typeflag is research.","verbose") if args.verbose else None
     TEXNAME    = args.subtype
-    TEXDIRPATH = LogDirPath + "/data/research/" + args.subtype
+    TEXDIRPATH = LogDirPath + "/research/" + args.subtype
   elif typeflag["other"]:
     printf("Typeflag is other.","verbose") if args.verbose else None
     TEXNAME    = args.title.replace(" ","_")
-    TEXDIRPATH = LogDirPath + "/data/other"
+    TEXDIRPATH = LogDirPath + "/other"
   else:
     printf("Typeflag is undefined! Exiting ...", "error")
     sys.exit()
@@ -548,7 +542,7 @@ if modeflag["create"]:
         print_log_tex()
       elif typeflag["slide"]:
         print_slide_tex()
-        subprocess.check_call("cp " + LogDirPath + "/" + RelSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+        subprocess.check_call("cp " + LogSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
       elif typeflag["research"]:
         print_research_tex()
       printf("The %s is created." % (TEXNAME + ".tex"), "verbose") if args.verbose else None
@@ -589,7 +583,7 @@ elif modeflag["view"]:
   else:
     printf("The %s doesnt exist." % TEXEXTPATH, "error")
     if query_yes_no("Do you want to list all pdf in the data directory?") == "yes":
-      List(LogDirPath+"/data/")
+      List(LogDirPath)
     sys.exit()
 
 elif modeflag["copy"]:
