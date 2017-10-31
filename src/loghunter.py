@@ -83,7 +83,7 @@ from datetime import datetime, timedelta
 
 # Global Variable
 LogDirPath="/home/kwtsang/Dropbox/loghunter_data"
-LogSrcPath="/home/kwtsang/OneDrive_CUHK/mle/loghunter/src"
+LogSrcPath="/home/kwtsang/mle/loghunter/src"
 PDFReader="okular"
 TexEditor="vim"
 TexEditorOptions="+26"
@@ -266,8 +266,8 @@ def print_slide_tex():
   TEXOBJECT.write('%s\n' % (r"\subtitle{Subtitle}"))
   TEXOBJECT.write('%s\n' % (r"\author{" + __author__ +  "}"))
   TEXOBJECT.write('%s\n' % (r"\institute[Nikhef]{National Institute for Subatomic Physics (Nikhef)}"))
-  TEXOBJECT.write('%s\n' % (r"\date[" + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d") + "]{" + args.subtype.replace ("_", " ") + ", " + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d" + "}")))
-  TEXOBJECT.write('%s\n' % (r"\titlegraphic{\includegraphics[width=3cm, keepaspectratio]{Nikhef-400x177.png}}"))
+  TEXOBJECT.write('%s\n' % (r"\date[" + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d") + "]{ConferenceName, " + Date(args.date, dt=args.delta_days, dateformat="%Y %b %d" + "}")))
+  TEXOBJECT.write('%s\n' % (r"\titlegraphic{\includegraphics[width=3cm, keepaspectratio]{new_Nikhef-1544x608.png}}"))
   TEXOBJECT.write('%s\n' % (r""))
 
   TEXOBJECT.write('%s\n' % (r"\begin{document}"))
@@ -542,7 +542,7 @@ if modeflag["create"]:
         print_log_tex()
       elif typeflag["slide"]:
         print_slide_tex()
-        subprocess.check_call("cp " + LogSrcPath + "/Nikhef-400x177.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
+        subprocess.check_call("cp " + LogSrcPath + "/new_Nikhef-1544x608.png " + TEXDIRPATH, stdout=subprocess.PIPE, shell=True)
       elif typeflag["research"]:
         print_research_tex()
       printf("The %s is created." % (TEXNAME + ".tex"), "verbose") if args.verbose else None
